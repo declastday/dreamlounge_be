@@ -9,8 +9,8 @@ engine = create_engine(
     # ── 커넥션 풀 튜닝 ──────────────────────────────────
     # 기본값(pool_size=5, max_overflow=10 → 최대 15)으로는
     # 동시 접속 100명에서 QueuePool 타임아웃이 발생함.
-    pool_size=25,          # 상시 유지 커넥션
-    max_overflow=25,       # 피크 시 추가 허용 → 최대 50
+    pool_size=16,          # 상시 유지 커넥션
+    max_overflow=8,       # 피크 시 추가 허용 → 최대 50
     pool_timeout=30,       # 대기 한계(초). 30초는 너무 길어 사용자가 체감함
     pool_recycle=1800,     # 30분마다 재생성 (pooler가 끊는 유휴 커넥션 대비)
     pool_pre_ping=True,    # 사용 전 살아있는지 확인 (끊긴 커넥션 오류 방지)
