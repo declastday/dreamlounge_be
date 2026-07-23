@@ -41,10 +41,17 @@ def _get_president_ids(db: Session, club_id: str) -> set:
 
 
 def get_posts(db: Session, club_id: str) -> list[dict]:
+    """동아리 게시글 목록 조회.
+
+    comments 는 로드하지 않는다.
+    comment_count 가 column_property(SQL COUNT)로 계산되므로
+    댓글 행을 메모리에 올릴 필요가 없다.
+    (게시글 상세 get_post 는 댓글 내용을 쓰므로 그대로 로드한다.)
+    """
     president_ids = _get_president_ids(db, club_id)
     posts = (
         db.query(Post)
-        .options(selectinload(Post.author), selectinload(Post.comments))
+        .options(selectinload(Post.author))
         .filter(Post.club_id == club_id, Post.is_deleted == False)
         .order_by(Post.is_notice.desc(), Post.created_at.desc())
         .all()
@@ -59,7 +66,7 @@ def get_posts(db: Session, club_id: str) -> list[dict]:
             "title": p.title,
             "is_notice": p.is_notice,
             "created_at": p.created_at,
-            "comment_count": sum(1 for c in p.comments if not c.is_deleted),
+            "comment_count": p.comment_count,  # column_property (SQL COUNT)
             "is_author_president": p.author_id in president_ids,
         })
     return result
