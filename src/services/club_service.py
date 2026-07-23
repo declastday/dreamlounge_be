@@ -16,16 +16,10 @@ def get_clubs(db: Session) -> list[Club]:
 
 
 def get_club(db: Session, club_id: str) -> Club | None:
-    """club_id로 동아리 상세 정보 조회 (tags + members 함께 로드).
-
-    members 를 함께 로드하는 이유:
-    ClubResponse 의 member_count 가 Club.members 를 순회하는 property 이므로,
-    미리 로드하지 않으면 응답 직렬화 시점에 lazy load 가 발생한다(N+1).
-    get_clubs 에는 이미 적용되어 있었으나 여기에만 누락되어 있었음.
-    """
+    """club_id로 동아리 상세 정보 조회 (tags 포함)."""
     return (
         db.query(Club)
-        .options(selectinload(Club.tags), selectinload(Club.members))
+        .options(selectinload(Club.tags))
         .filter(Club.id == club_id)
         .first()
     )
