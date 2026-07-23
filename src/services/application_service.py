@@ -216,6 +216,7 @@ def get_submitted_application(db: Session, user: User, application_id: str) -> d
 def get_active_clubs(db: Session, user: User) -> list[dict]:
     memberships = (
         db.query(ClubMember)
+        .options(selectinload(ClubMember.club))  # N+1 방지 (아래에서 m.club 접근)
         .join(Club, ClubMember.club_id == Club.id)
         .filter(ClubMember.user_id == user.id, ClubMember.status == "active")
         .all()
@@ -237,6 +238,7 @@ def get_club_applications(db: Session, club_id: str) -> list[dict]:
     """동아리에 제출된 신청서 목록 (is_draft=False)."""
     apps = (
         db.query(Application)
+        .options(selectinload(Application.user))  # N+1 방지 (아래에서 a.user 접근)
         .join(ApplicationForm, Application.form_id == ApplicationForm.id)
         .filter(ApplicationForm.club_id == club_id, Application.is_draft == False)
         .order_by(Application.submitted_at.desc())
