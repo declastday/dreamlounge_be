@@ -1,7 +1,7 @@
 from __future__ import annotations
 from uuid import uuid4
-from sqlalchemy import String, Boolean, Text, Date, ForeignKey, JSON
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Boolean, Text, Date, ForeignKey, JSON, select, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship, column_property
 from src.db.base import Base, TimestampMixin
 
 
@@ -33,9 +33,6 @@ class Club(TimestampMixin, Base):
     application_forms = relationship("ApplicationForm", back_populates="club")
     posts = relationship("Post", back_populates="club")
 
-    @property
-    def member_count(self) -> int:
-        return sum(1 for m in self.members if m.status == "active")
 
 
 class ClubTag(Base):
@@ -47,3 +44,27 @@ class ClubTag(Base):
     tag_value: Mapped[str] = mapped_column(String(100), nullable=False)
 
     club = relationship("Club", back_populates="tags")
+
+
+# ── member_count 를 SQL 집계로 계산 (성능 최적화) ──────────────
+# 기존: @property 로 self.members 를 파이썬에서 순회
+#       → 개수만 필요한데 회원 행 전체를 메모리로 로드해야 했음
+#       (동아리 30개 x 회원 40명이면 1,200개 객체 생성 + 전송)
+#
+# 변경: DB 가 COUNT 로 숫자만 반환
+#       → 회원 행을 전혀 로드하지 않음. 응답 크기/쿼리 수 감소
+#
+# ClubMember 가 별도 모듈이라 순환 import 를 피하려고
+# 클래스 정의 이후에 부착한다.
+from src.models.club_member import ClubMember  # noqa: E402
+
+Club.member_count = column_property(
+    select(func.count(ClubMember.id))
+    .where(
+        ClubMember.club_id == Club.id,
+        ClubMember.status == "active",
+    )
+    .correlate_except(ClubMember)
+    .scalar_subquery(),
+    deferred=False,
+)
