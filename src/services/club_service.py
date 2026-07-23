@@ -7,25 +7,28 @@ from src.schemas.club import ClubCreate, ClubUpdate, FormCreate, FormUpdate, Que
 
 
 def get_clubs(db: Session) -> list[Club]:
-    """전체 동아리 목록 조회 (tags + members 함께 로드)."""
+    """전체 동아리 목록 조회 (tags 로드).
+
+    members 는 로드하지 않는다.
+    member_count 가 column_property(SQL COUNT)로 계산되므로
+    회원 행을 메모리에 올릴 필요가 없다.
+    """
     return (
         db.query(Club)
-        .options(selectinload(Club.tags), selectinload(Club.members))
+        .options(selectinload(Club.tags))
         .all()
     )
 
 
 def get_club(db: Session, club_id: str) -> Club | None:
-    """club_id로 동아리 상세 정보 조회 (tags + members 함께 로드).
+    """club_id로 동아리 상세 정보 조회 (tags 로드).
 
-    members 를 함께 로드하는 이유:
-    ClubResponse 의 member_count 가 Club.members 를 순회하는 property 이므로,
-    미리 로드하지 않으면 응답 직렬화 시점에 lazy load 가 발생한다(N+1).
-    get_clubs 에는 이미 적용되어 있었으나 여기에만 누락되어 있었음.
+    member_count 는 column_property(SQL COUNT)로 계산되므로
+    members 를 로드하지 않아도 N+1 이 발생하지 않는다.
     """
     return (
         db.query(Club)
-        .options(selectinload(Club.tags), selectinload(Club.members))
+        .options(selectinload(Club.tags))
         .filter(Club.id == club_id)
         .first()
     )
