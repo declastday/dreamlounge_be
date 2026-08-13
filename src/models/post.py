@@ -52,7 +52,7 @@ class Comment(TimestampMixin, Base):
 #         (get_posts 의 selectinload(Post.comments) 도 함께 제거)
 #
 #   주의: 게시글 "상세"(get_post)는 댓글 내용을 실제로 사용하므로
-#         그쪽 selectinload 는 그대로 유지
+#         그쪽 selectinload 는 그대로 유지한다.
 # ============================================================
 Post.comment_count = column_property(
     select(func.count(Comment.id))

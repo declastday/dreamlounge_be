@@ -241,7 +241,9 @@ def get_submitted_application(db: Session, user: User, application_id: str) -> d
 def get_active_clubs(db: Session, user: User) -> list[dict]:
     memberships = (
         db.query(ClubMember)
-        # [최적화] club 을 함께 로드(N+1 방지)
+        # [최적화] club 을 함께 로드(N+1 방지).
+        #   아래 반복문에서 m.club.name 을 접근하므로, join 만으로는
+        #   관계가 채워지지 않아 소속 동아리 수만큼 추가 쿼리가 발생한다.
         .options(selectinload(ClubMember.club))
         .join(Club, ClubMember.club_id == Club.id)
         .filter(ClubMember.user_id == user.id, ClubMember.status == "active")

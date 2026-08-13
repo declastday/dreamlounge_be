@@ -11,7 +11,10 @@ from src.models.club_member import ClubMember
 from src.models.user import User, PrivacyConsent, EmailVerification
 from src.schemas.user import UserCreate
 from src.utils.email import send_verification_email
-from src.utils.supabase_client import get_supabase_client
+from src.utils.supabase_client import (
+    create_supabase_auth_client,
+    get_supabase_admin_client,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -93,7 +96,7 @@ def register_user(db: Session, data: UserCreate) -> User:
 
     auth_user_id = None
     if settings.SUPABASE_SERVICE_KEY:
-        client = get_supabase_client()
+        client = get_supabase_admin_client()
         auth_response = client.auth.admin.create_user({
             "email": email,
             "password": data.password,
@@ -144,11 +147,11 @@ def create_supabase_session(db: Session, user: User, password: str):
     if not settings.SUPABASE_SERVICE_KEY:
         return None
 
-    client = get_supabase_client()
+    auth_client = create_supabase_auth_client()
     if not user.auth_user_id:
         if not verify_password(password, user.password_hash):
             return None
-        auth_response = client.auth.admin.create_user({
+        auth_response = get_supabase_admin_client().auth.admin.create_user({
             "email": user.email,
             "password": password,
             "email_confirm": True,
@@ -157,7 +160,7 @@ def create_supabase_session(db: Session, user: User, password: str):
         user.auth_user_id = str(auth_response.user.id)
         db.commit()
 
-    return client.auth.sign_in_with_password({
+    return auth_client.auth.sign_in_with_password({
         "email": user.email,
         "password": password,
     }).session
@@ -209,7 +212,7 @@ def withdraw_user(db: Session, user: User) -> None:
     try:
         db.flush()
         if settings.SUPABASE_SERVICE_KEY and auth_user_id:
-            get_supabase_client().auth.admin.delete_user(
+            get_supabase_admin_client().auth.admin.delete_user(
                 auth_user_id,
                 should_soft_delete=False,
             )

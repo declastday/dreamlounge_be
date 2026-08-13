@@ -11,7 +11,7 @@ def get_clubs(db: Session, search: str | None = None) -> list[Club]:
     """Return clubs whose name or division partially matches ``search``."""
     # [최적화] selectinload(Club.members) 제거.
     #   member_count 가 column_property(SQL COUNT)로 계산되므로
-    #   회원 행을 메모리에 올릴 필요가 없다 (검색 기능은 그대로 유지)
+    #   회원 행을 메모리에 올릴 필요가 없다. (검색 기능은 그대로 유지)
     query = (
         db.query(Club)
         .options(selectinload(Club.tags))

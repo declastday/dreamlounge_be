@@ -33,9 +33,9 @@ class Club(TimestampMixin, Base):
     application_forms = relationship("ApplicationForm", back_populates="club")
     posts = relationship("Post", back_populates="club")
 
-    # [최적화] member_count 는 파일 하단에서 column_property(SQL COUNT)로 정의
+    # [최적화] member_count 는 파일 하단에서 column_property(SQL COUNT)로 정의한다.
     #          기존의 @property(파이썬 계산)는 회원 행을 전부 로드해야 해서
-    #          목록 조회 시 N+1 을 유발하므로 제거
+    #          목록 조회 시 N+1 을 유발하므로 제거했다.
 
 
 class ClubTag(Base):
@@ -56,7 +56,7 @@ class ClubTag(Base):
 #         (club_service.get_clubs 의 selectinload(Club.members) 도 함께 제거됨)
 #
 #   ClubMember 가 별도 모듈이라 순환 import 를 피하려고
-#   클래스 정의 이후에 부착
+#   클래스 정의 이후에 부착한다.
 # ============================================================
 from src.models.club_member import ClubMember  # noqa: E402
 

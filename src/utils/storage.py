@@ -3,7 +3,7 @@ import uuid
 from fastapi import UploadFile
 
 from src.core.config import settings
-from src.utils.supabase_client import get_supabase_client
+from src.utils.supabase_client import get_supabase_admin_client
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ async def upload_club_image(file: UploadFile) -> str:
     ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else "jpg"
     path = f"clubs/{uuid.uuid4()}.{ext}"
 
-    client = get_supabase_client()
+    client = get_supabase_admin_client()
     try:
         client.storage.from_(settings.SUPABASE_STORAGE_BUCKET).upload(
             path=path,

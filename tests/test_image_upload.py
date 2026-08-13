@@ -1,6 +1,5 @@
 """동아리 이미지 업로드 테스트 (Supabase Storage mock)."""
 import io
-import pytest
 from unittest.mock import MagicMock, patch
 
 UPLOAD_URL = "/api/v1/clubs/images"
@@ -20,7 +19,7 @@ def _jpeg_file(name: str = "photo.jpg", size: int = 1024):
 
 class TestImageUpload:
     def test_upload_success(self, client, auth_headers):
-        with patch("src.utils.storage.get_supabase_client", return_value=_mock_supabase()):
+        with patch("src.utils.storage.get_supabase_admin_client", return_value=_mock_supabase()):
             resp = client.post(UPLOAD_URL, headers=auth_headers, files={"file": _jpeg_file()})
         assert resp.status_code == 200
         assert resp.json()["image_url"] == FAKE_PUBLIC_URL
@@ -30,7 +29,7 @@ class TestImageUpload:
         assert resp.status_code in (401, 403)
 
     def test_rejects_unsupported_type(self, client, auth_headers):
-        with patch("src.utils.storage.get_supabase_client", return_value=_mock_supabase()):
+        with patch("src.utils.storage.get_supabase_admin_client", return_value=_mock_supabase()):
             resp = client.post(
                 UPLOAD_URL,
                 headers=auth_headers,
@@ -41,7 +40,7 @@ class TestImageUpload:
 
     def test_rejects_oversized_file(self, client, auth_headers):
         big = io.BytesIO(b"\xff\xd8\xff" + b"\x00" * (5 * 1024 * 1024 + 1))
-        with patch("src.utils.storage.get_supabase_client", return_value=_mock_supabase()):
+        with patch("src.utils.storage.get_supabase_admin_client", return_value=_mock_supabase()):
             resp = client.post(
                 UPLOAD_URL,
                 headers=auth_headers,
@@ -51,7 +50,7 @@ class TestImageUpload:
         assert "5MB" in resp.json()["detail"]
 
     def test_accepts_png(self, client, auth_headers):
-        with patch("src.utils.storage.get_supabase_client", return_value=_mock_supabase()):
+        with patch("src.utils.storage.get_supabase_admin_client", return_value=_mock_supabase()):
             resp = client.post(
                 UPLOAD_URL,
                 headers=auth_headers,
@@ -60,7 +59,7 @@ class TestImageUpload:
         assert resp.status_code == 200
 
     def test_accepts_webp(self, client, auth_headers):
-        with patch("src.utils.storage.get_supabase_client", return_value=_mock_supabase()):
+        with patch("src.utils.storage.get_supabase_admin_client", return_value=_mock_supabase()):
             resp = client.post(
                 UPLOAD_URL,
                 headers=auth_headers,
@@ -70,7 +69,7 @@ class TestImageUpload:
 
     def test_returned_url_usable_in_club_create(self, client, auth_headers):
         """업로드된 URL을 동아리 등록에 바로 사용할 수 있어야 한다."""
-        with patch("src.utils.storage.get_supabase_client", return_value=_mock_supabase()):
+        with patch("src.utils.storage.get_supabase_admin_client", return_value=_mock_supabase()):
             upload_resp = client.post(UPLOAD_URL, headers=auth_headers, files={"file": _jpeg_file()})
 
         image_url = upload_resp.json()["image_url"]
@@ -85,6 +84,6 @@ class TestImageUpload:
         mock = MagicMock()
         mock.storage.from_().upload.side_effect = Exception("Storage unavailable")
 
-        with patch("src.utils.storage.get_supabase_client", return_value=mock):
+        with patch("src.utils.storage.get_supabase_admin_client", return_value=mock):
             resp = client.post(UPLOAD_URL, headers=auth_headers, files={"file": _jpeg_file()})
         assert resp.status_code == 503

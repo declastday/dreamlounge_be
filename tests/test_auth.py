@@ -352,7 +352,7 @@ class TestAccountWithdrawal:
         with (
             patch.object(settings, "SUPABASE_SERVICE_KEY", "test-service-key"),
             patch(
-                "src.services.auth_service.get_supabase_client",
+                "src.services.auth_service.get_supabase_admin_client",
                 return_value=supabase,
             ),
         ):
@@ -364,3 +364,44 @@ class TestAccountWithdrawal:
         )
         assert user.is_active is False
         assert user.auth_user_id is None
+
+    def test_login_client_does_not_replace_admin_client_session(self, db):
+        from src.core.config import settings
+        from src.models.user import User
+        from src.services import auth_service
+
+        user = User(
+            auth_user_id="00000000-0000-0000-0000-000000000002",
+            student_id="LOGINCLIENT001",
+            password_hash="unused",
+            name="로그인테스트",
+            email="login-client@cju.ac.kr",
+            email_verified=True,
+        )
+        db.add(user)
+        db.commit()
+
+        auth_client = MagicMock()
+        expected_session = MagicMock()
+        auth_client.auth.sign_in_with_password.return_value.session = expected_session
+        admin_client = MagicMock()
+
+        with (
+            patch.object(settings, "SUPABASE_SERVICE_KEY", "test-service-key"),
+            patch(
+                "src.services.auth_service.create_supabase_auth_client",
+                return_value=auth_client,
+            ),
+            patch(
+                "src.services.auth_service.get_supabase_admin_client",
+                return_value=admin_client,
+            ),
+        ):
+            session = auth_service.create_supabase_session(db, user, "Password1!")
+
+        assert session is expected_session
+        auth_client.auth.sign_in_with_password.assert_called_once_with({
+            "email": user.email,
+            "password": "Password1!",
+        })
+        admin_client.auth.sign_in_with_password.assert_not_called()

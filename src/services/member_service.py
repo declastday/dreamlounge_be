@@ -7,7 +7,9 @@ from src.models.club_member import ClubMember
 def list_members(db: Session, club_id: str) -> list[dict]:
     members = (
         db.query(ClubMember)
-        # [최적화] user 를 함께 로드(N+1 방지)
+        # [최적화] user 를 함께 로드(N+1 방지).
+        #   아래 반복문에서 m.user.name / student_id / department / email / phone
+        #   을 접근하므로, 없으면 회원 수만큼 추가 쿼리가 발생한다.
         .options(selectinload(ClubMember.user))
         .filter(ClubMember.club_id == club_id, ClubMember.status == "active")
         .all()

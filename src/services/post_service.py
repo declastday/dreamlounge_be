@@ -44,9 +44,9 @@ def get_posts(db: Session, club_id: str) -> list[dict]:
     president_ids = _get_president_ids(db, club_id)
     posts = (
         db.query(Post)
-        # [최적화] selectinload(Post.comments) 제거
+        # [최적화] selectinload(Post.comments) 제거.
         #   comment_count 가 column_property(SQL COUNT)로 계산되므로
-        #   댓글 행을 로드하지 않는다 (상세 조회 get_post 는 그대로 유지)
+        #   댓글 행을 로드하지 않는다. (상세 조회 get_post 는 그대로 유지)
         .options(selectinload(Post.author))
         .filter(Post.club_id == club_id, Post.is_deleted == False)
         .order_by(Post.is_notice.desc(), Post.created_at.desc())

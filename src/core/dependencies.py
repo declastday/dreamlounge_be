@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from src.db.session import get_db
 from src.core.security import decode_access_token
 from src.core.config import settings
-from src.utils.supabase_client import get_supabase_client
+from src.utils.supabase_client import create_supabase_auth_client
 
 bearer = HTTPBearer()
 
@@ -16,7 +16,9 @@ def get_current_user(
 ):
     try:
         if settings.SUPABASE_SERVICE_KEY:
-            auth_user = get_supabase_client().auth.get_user(credentials.credentials).user
+            auth_user = create_supabase_auth_client().auth.get_user(
+                credentials.credentials
+            ).user
             user_id = str(auth_user.id)
             from src.models.user import User
             user = db.query(User).filter(User.auth_user_id == user_id).first()
